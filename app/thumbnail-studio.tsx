@@ -60,6 +60,25 @@ const loadImage = (src: string): Promise<HTMLImageElement> =>
     img.src = src;
   });
 
+async function compressLogoFile(file: File) {
+  const loaded = await readImageFromFile(file);
+  try {
+    const maxSide = 512;
+    const ratio = Math.min(1, maxSide / Math.max(loaded.img.naturalWidth, loaded.img.naturalHeight));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(loaded.img.naturalWidth * ratio));
+    canvas.height = Math.max(1, Math.round(loaded.img.naturalHeight * ratio));
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return file;
+    ctx.drawImage(loaded.img, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/webp", 0.9));
+    if (!blob) return file;
+    return new File([blob], `${file.name.replace(/\.[^.]+$/, "") || "logo"}.webp`, { type: "image/webp" });
+  } finally {
+    URL.revokeObjectURL(loaded.src);
+  }
+}
+
 function drawCoverImage(
   ctx: CanvasRenderingContext2D,
   img: HTMLImageElement,
@@ -85,7 +104,7 @@ function drawSportText(
   align: CanvasTextAlign = "center",
 ) {
   ctx.save();
-  ctx.font = `900 ${size}px "Apple SD Gothic Neo", "Noto Sans KR", "Pretendard", "Arial Black", sans-serif`;
+  ctx.font = `900 ${size}px "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", "Arial Black", sans-serif`;
   ctx.textAlign = align;
   ctx.textBaseline = "alphabetic";
   ctx.lineJoin = "round";
@@ -321,14 +340,14 @@ function renderThumbnail({
   const vikingsLogo = logoImages["/assets/vikings-logo.png"];
   const opponentLogo = logoImages[opponent.logoUrl];
 
-  if (projectLogo) drawLogoCircle(ctx, projectLogo, 445, 145, 148, false);
+  if (projectLogo) drawLogoCircle(ctx, projectLogo, 445, 150, 190, false);
   drawSportText(ctx, project.tournamentLine1, 420, 350, 76);
   drawSportText(ctx, project.tournamentLine2, 420, 438, 76);
   drawSportText(ctx, stageText || "[예선 4경기]", 425, 640, 88);
 
   if (vikingsLogo) drawLogoCircle(ctx, vikingsLogo, 190, 865, 250, false);
   ctx.save();
-  ctx.font = 'italic 900 84px "Apple SD Gothic Neo", "Noto Sans KR", "Arial Black", sans-serif';
+  ctx.font = 'italic 900 84px "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", "Arial Black", sans-serif';
   ctx.fillStyle = "#ffffff";
   ctx.shadowColor = "rgba(0,0,0,.65)";
   ctx.shadowBlur = 3;
@@ -336,11 +355,14 @@ function renderThumbnail({
   ctx.shadowOffsetY = 7;
   ctx.fillText("vs", 365, 895);
   ctx.restore();
-  if (opponentLogo) drawLogoCircle(ctx, opponentLogo, 600, 865, 250, opponent.circularFrame);
+  if (opponentLogo) drawLogoCircle(ctx, opponentLogo, 600, 865, 250, true);
 }
 
 export default function ThumbnailStudio() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [view, setView] = useState<"home" | "editor">("home");
+  const [showProjectForm, setShowProjectForm] = useState(false);
+  const [showOpponentManager, setShowOpponentManager] = useState(false);
   const [projects, setProjects] = useState<Project[]>([DEFAULT_PROJECT]);
   const [opponents, setOpponents] = useState<Opponent[]>(DEFAULT_OPPONENTS);
   const [selectedProjectId, setSelectedProjectId] = useState(DEFAULT_PROJECT.id);
@@ -357,7 +379,6 @@ export default function ThumbnailStudio() {
   const [projectLogoFile, setProjectLogoFile] = useState<File | null>(null);
   const [opponentName, setOpponentName] = useState("");
   const [opponentLogoFile, setOpponentLogoFile] = useState<File | null>(null);
-  const [opponentCircular, setOpponentCircular] = useState(true);
   const [logoImages, setLogoImages] = useState<Record<string, HTMLImageElement>>({});
   const [status, setStatus] = useState("준비 완료");
 
@@ -424,7 +445,7 @@ export default function ThumbnailStudio() {
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas || view !== "editor") return;
     renderThumbnail({
       canvas,
       theme,
@@ -437,14 +458,18 @@ export default function ThumbnailStudio() {
       offsetX,
       offsetY,
     });
-  }, [gamePhoto, logoImages, offsetX, offsetY, selectedOpponent, selectedProject, stageText, theme, zoom]);
+  }, [gamePhoto, logoImages, offsetX, offsetY, selectedOpponent, selectedProject, stageText, theme, view, zoom]);
 
   const uploadStoredImage = async (file: File, folder: string) => {
     const form = new FormData();
-    form.append("file", file);
+    const uploadFile = await compressLogoFile(file);
+    form.append("file", uploadFile);
     form.append("folder", folder);
     const response = await fetch("/api/uploads", { method: "POST", body: form });
-    if (!response.ok) throw new Error("이미지 업로드에 실패했습니다.");
+    if (!response.ok) {
+      const detail = await response.json().catch(() => null) as { error?: string } | null;
+      throw new Error(detail?.error ?? "이미지 업로드에 실패했습니다.");
+    }
     const data = (await response.json()) as { url: string };
     return data.url;
   };
@@ -474,6 +499,8 @@ export default function ThumbnailStudio() {
       setSelectedProjectId(data.project.id);
       setProjectName("");
       setProjectLogoFile(null);
+      setShowProjectForm(false);
+      setView("editor");
       setStatus("프로젝트 저장 완료");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "프로젝트 저장 실패");
@@ -492,7 +519,7 @@ export default function ThumbnailStudio() {
       const response = await fetch("/api/opponents", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: opponentName, logoUrl, circularFrame: opponentCircular }),
+        body: JSON.stringify({ name: opponentName, logoUrl, circularFrame: true }),
       });
       if (!response.ok) throw new Error("상대팀 저장 실패");
       const data = (await response.json()) as { opponent: Opponent };
@@ -509,7 +536,6 @@ export default function ThumbnailStudio() {
   const loadOpponentForEdit = (opponent: Opponent) => {
     setSelectedOpponentId(opponent.id);
     setOpponentName(opponent.name);
-    setOpponentCircular(opponent.circularFrame);
     setOpponentLogoFile(null);
     setStatus("선택 상대팀을 편집 폼에 불러왔습니다.");
   };
@@ -528,7 +554,7 @@ export default function ThumbnailStudio() {
         ...selectedOpponent,
         name: opponentName.trim() || selectedOpponent.name,
         logoUrl,
-        circularFrame: opponentCircular,
+        circularFrame: true,
       };
       const response = await fetch(`/api/opponents/${selectedOpponent.id}`, {
         method: "PATCH",
@@ -601,36 +627,105 @@ export default function ThumbnailStudio() {
     setStatus("1920x1080 PNG 다운로드 생성 완료");
   };
 
+  const openProject = (project: Project) => {
+    setSelectedProjectId(project.id);
+    setView("editor");
+    setStatus(`${project.name} 프로젝트를 열었습니다.`);
+  };
+
+  const goHome = () => {
+    setView("home");
+    setStatus("프로젝트 목록");
+  };
+
+  const opponentManager = (
+    <section className="manager-panel" aria-label="상대팀 관리">
+      <div className="section-title">
+        <h2>상대팀 관리</h2>
+        <button type="button" onClick={() => setShowOpponentManager(false)}>닫기</button>
+      </div>
+      <form className="control-grid" onSubmit={createOpponent}>
+        <input value={opponentName} onChange={(event) => setOpponentName(event.target.value)} placeholder="상대팀명" />
+        <label className="file-button">
+          <span>{opponentLogoFile ? opponentLogoFile.name : "상대 로고"}</span>
+          <input type="file" accept="image/*" onChange={(event) => setOpponentLogoFile(event.target.files?.[0] ?? null)} />
+        </label>
+        <button type="submit">상대팀 저장</button>
+        <button type="button" onClick={updateSelectedOpponent}>수정 저장</button>
+      </form>
+
+      <div className="opponent-list">
+        {opponents.map((opponent) => (
+          <div key={opponent.id} className="opponent-row">
+            <img src={opponent.logoUrl} alt="" />
+            <span>{opponent.name}</span>
+            <button type="button" onClick={() => loadOpponentForEdit(opponent)}>편집</button>
+            <button type="button" onClick={() => deleteOpponent(opponent.id)}>삭제</button>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+
+  if (view === "home") {
+    return (
+      <main className="home-shell">
+        <header className="home-header">
+          <div>
+            <p className="eyebrow">Seoul Vikings</p>
+            <h1>대회 프로젝트</h1>
+          </div>
+          <div className="home-actions">
+            <button type="button" onClick={() => setShowOpponentManager((value) => !value)}>상대팀 관리</button>
+          </div>
+        </header>
+
+        {showOpponentManager ? opponentManager : null}
+
+        <section className="project-gallery" aria-label="대회 프로젝트 목록">
+          {projects.map((project) => (
+            <button key={project.id} className="project-card" type="button" onClick={() => openProject(project)}>
+              <img src={project.logoUrl} alt="" />
+              <strong>{project.name}</strong>
+              <span>{project.tournamentLine1}</span>
+              <span>{project.tournamentLine2}</span>
+            </button>
+          ))}
+
+          <button className="project-card create-card" type="button" onClick={() => setShowProjectForm((value) => !value)}>
+            <strong>+ 새 대회 프로젝트</strong>
+            <span>대회 로고와 기본 문구를 저장</span>
+          </button>
+        </section>
+
+        {showProjectForm ? (
+          <form className="create-project-panel" onSubmit={createProject}>
+            <input value={projectName} onChange={(event) => setProjectName(event.target.value)} placeholder="프로젝트명" />
+            <input value={projectLine1} onChange={(event) => setProjectLine1(event.target.value)} placeholder="대회명 1줄" />
+            <input value={projectLine2} onChange={(event) => setProjectLine2(event.target.value)} placeholder="대회명 2줄" />
+            <label className="file-button">
+              <span>{projectLogoFile ? projectLogoFile.name : "대회 로고 업로드"}</span>
+              <input type="file" accept="image/*" onChange={(event) => setProjectLogoFile(event.target.files?.[0] ?? null)} />
+            </label>
+            <button type="submit">프로젝트 만들기</button>
+          </form>
+        ) : null}
+
+        <p className="status">{status}</p>
+      </main>
+    );
+  }
+
   return (
     <main className="studio-shell">
       <section className="controls" aria-label="썸네일 설정">
         <div className="panel-head">
           <div>
             <p className="eyebrow">Seoul Vikings</p>
-            <h1>경기 영상 썸네일 제작</h1>
+            <h1>{selectedProject.name}</h1>
           </div>
-          <img src="/assets/vikings-logo.png" alt="서울 바이킹스" />
+          <button className="ghost-button" type="button" onClick={goHome}>프로젝트 목록</button>
         </div>
-
-        <div className="control-block">
-          <label htmlFor="project">프로젝트</label>
-          <select id="project" value={selectedProject.id} onChange={(event) => setSelectedProjectId(event.target.value)}>
-            {projects.map((project) => (
-              <option key={project.id} value={project.id}>{project.name}</option>
-            ))}
-          </select>
-        </div>
-
-        <form className="control-grid" onSubmit={createProject}>
-          <input value={projectName} onChange={(event) => setProjectName(event.target.value)} placeholder="새 프로젝트명" />
-          <input value={projectLine1} onChange={(event) => setProjectLine1(event.target.value)} placeholder="대회명 1줄" />
-          <input value={projectLine2} onChange={(event) => setProjectLine2(event.target.value)} placeholder="대회명 2줄" />
-          <label className="file-button">
-            <span>대회 로고</span>
-            <input type="file" accept="image/*" onChange={(event) => setProjectLogoFile(event.target.files?.[0] ?? null)} />
-          </label>
-          <button type="submit">＋ 프로젝트 저장</button>
-        </form>
 
         <div className="control-block">
           <label>팀 테마</label>
@@ -652,31 +747,6 @@ export default function ThumbnailStudio() {
               <option key={opponent.id} value={opponent.id}>{opponent.name}</option>
             ))}
           </select>
-        </div>
-
-        <form className="control-grid" onSubmit={createOpponent}>
-          <input value={opponentName} onChange={(event) => setOpponentName(event.target.value)} placeholder="상대팀명" />
-          <label className="file-button">
-            <span>상대 로고</span>
-            <input type="file" accept="image/*" onChange={(event) => setOpponentLogoFile(event.target.files?.[0] ?? null)} />
-          </label>
-          <label className="check-row">
-            <input type="checkbox" checked={opponentCircular} onChange={(event) => setOpponentCircular(event.target.checked)} />
-            원형 흰색 프레임
-          </label>
-          <button type="submit">＋ 상대팀 저장</button>
-          <button type="button" onClick={updateSelectedOpponent}>수정 저장</button>
-        </form>
-
-        <div className="opponent-list">
-          {opponents.map((opponent) => (
-            <div key={opponent.id} className="opponent-row">
-              <img src={opponent.logoUrl} alt="" />
-              <span>{opponent.name}</span>
-              <button type="button" onClick={() => loadOpponentForEdit(opponent)}>편집</button>
-              <button type="button" onClick={() => deleteOpponent(opponent.id)}>삭제</button>
-            </div>
-          ))}
         </div>
 
         <div className="control-block">

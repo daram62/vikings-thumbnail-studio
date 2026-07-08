@@ -1,0 +1,115 @@
+import { env } from "cloudflare:workers";
+
+export type ProjectRow = {
+  id: string;
+  name: string;
+  logoUrl: string;
+  tournamentLine1: string;
+  tournamentLine2: string;
+};
+
+export type OpponentRow = {
+  id: string;
+  name: string;
+  logoUrl: string;
+  circularFrame: boolean;
+};
+
+type EnvWithStorage = {
+  DB?: D1Database;
+  BUCKET?: R2Bucket;
+};
+
+export const runtime = "edge";
+
+export function getBindings() {
+  return env as EnvWithStorage;
+}
+
+export function createId(prefix: string) {
+  return `${prefix}_${crypto.randomUUID().replace(/-/g, "")}`;
+}
+
+export async function ensureSchema(db: D1Database) {
+  await db.batch([
+    db.prepare(`CREATE TABLE IF NOT EXISTS projects (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      logo_url TEXT NOT NULL,
+      tournament_line_1 TEXT NOT NULL,
+      tournament_line_2 TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`),
+    db.prepare(`CREATE TABLE IF NOT EXISTS opponents (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      logo_url TEXT NOT NULL,
+      circular_frame INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`),
+    db.prepare(`CREATE TABLE IF NOT EXISTS thumbnails (
+      id TEXT PRIMARY KEY,
+      project_id TEXT NOT NULL,
+      opponent_id TEXT NOT NULL,
+      theme TEXT NOT NULL,
+      stage_text TEXT NOT NULL,
+      photo_name TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`),
+    db.prepare("CREATE INDEX IF NOT EXISTS thumbnails_created_at_idx ON thumbnails (created_at)"),
+  ]);
+
+  const count = await db.prepare("SELECT COUNT(*) AS count FROM projects").first<{ count: number }>();
+  if (!count?.count) {
+    await db.batch([
+      db.prepare(`INSERT INTO projects (id, name, logo_url, tournament_line_1, tournament_line_2)
+        VALUES (?, ?, ?, ?, ?)`).bind(
+        "sample-project",
+        "챌린지컵 샘플",
+        "/assets/sample-tournament-logo.png",
+        "대전광역시 플로어볼",
+        "챌린지컵 대회",
+      ),
+      db.prepare(`INSERT INTO opponents (id, name, logo_url, circular_frame)
+        VALUES (?, ?, ?, ?)`).bind("haechis", "해치스 서울", "/assets/haechis-logo.png", 1),
+      db.prepare(`INSERT INTO opponents (id, name, logo_url, circular_frame)
+        VALUES (?, ?, ?, ?)`).bind("sniper", "스나이퍼", "/assets/sniper-logo.png", 1),
+    ]);
+  }
+}
+
+export function normalizeProject(row: {
+  id: string;
+  name: string;
+  logo_url: string;
+  tournament_line_1: string;
+  tournament_line_2: string;
+}): ProjectRow {
+  return {
+    id: row.id,
+    name: row.name,
+    logoUrl: row.logo_url,
+    tournamentLine1: row.tournament_line_1,
+    tournamentLine2: row.tournament_line_2,
+  };
+}
+
+export function normalizeOpponent(row: {
+  id: string;
+  name: string;
+  logo_url: string;
+  circular_frame: number;
+}): OpponentRow {
+  return {
+    id: row.id,
+    name: row.name,
+    logoUrl: row.logo_url,
+    circularFrame: Boolean(row.circular_frame),
+  };
+}
+
+export function jsonError(message: string, status = 500) {
+  return Response.json({ error: message }, { status });
+}

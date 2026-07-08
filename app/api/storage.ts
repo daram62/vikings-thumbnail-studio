@@ -64,7 +64,7 @@ export async function ensureSchema(db: D1Database) {
   const count = await db.prepare("SELECT COUNT(*) AS count FROM projects").first<{ count: number }>();
   if (!count?.count) {
     await db.batch([
-      db.prepare(`INSERT INTO projects (id, name, logo_url, tournament_line_1, tournament_line_2)
+      db.prepare(`INSERT OR IGNORE INTO projects (id, name, logo_url, tournament_line_1, tournament_line_2)
         VALUES (?, ?, ?, ?, ?)`).bind(
         "sample-project",
         "챌린지컵 샘플",
@@ -72,9 +72,9 @@ export async function ensureSchema(db: D1Database) {
         "대전광역시 플로어볼",
         "챌린지컵 대회",
       ),
-      db.prepare(`INSERT INTO opponents (id, name, logo_url, circular_frame)
+      db.prepare(`INSERT OR IGNORE INTO opponents (id, name, logo_url, circular_frame)
         VALUES (?, ?, ?, ?)`).bind("haechis", "해치스 서울", "/assets/haechis-logo.png", 1),
-      db.prepare(`INSERT INTO opponents (id, name, logo_url, circular_frame)
+      db.prepare(`INSERT OR IGNORE INTO opponents (id, name, logo_url, circular_frame)
         VALUES (?, ?, ?, ?)`).bind("sniper", "스나이퍼", "/assets/sniper-logo.png", 1),
     ]);
   }

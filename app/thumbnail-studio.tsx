@@ -76,15 +76,59 @@ function drawCoverImage(
   ctx.drawImage(img, dx, dy, drawW, drawH);
 }
 
-function drawText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, size: number) {
+function drawSportText(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  size: number,
+  align: CanvasTextAlign = "center",
+) {
   ctx.save();
-  ctx.font = `900 ${size}px Arial, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif`;
-  ctx.fillStyle = "#ffffff";
-  ctx.shadowColor = "rgba(0,0,0,.64)";
-  ctx.shadowBlur = 4;
+  ctx.font = `900 ${size}px "Apple SD Gothic Neo", "Noto Sans KR", "Pretendard", "Arial Black", sans-serif`;
+  ctx.textAlign = align;
+  ctx.textBaseline = "alphabetic";
+  ctx.lineJoin = "round";
+  ctx.miterLimit = 2;
+  ctx.strokeStyle = "rgba(5, 5, 18, .5)";
+  ctx.lineWidth = Math.max(5, size * 0.06);
+  ctx.shadowColor = "rgba(0,0,0,.62)";
+  ctx.shadowBlur = 2;
   ctx.shadowOffsetX = 7;
   ctx.shadowOffsetY = 8;
+  ctx.strokeText(text, x, y);
+  ctx.fillStyle = "#ffffff";
   ctx.fillText(text, x, y);
+  ctx.restore();
+}
+
+function drawSilkRibbon(
+  ctx: CanvasRenderingContext2D,
+  color: string,
+  shadow: string,
+  startX: number,
+  width: number,
+  alpha: number,
+  lean: number,
+) {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.beginPath();
+  ctx.moveTo(startX, -80);
+  ctx.bezierCurveTo(startX + width * 1.4, 150, startX - width * 0.2, 410, startX + width + lean, HEIGHT + 80);
+  ctx.lineTo(startX + width * 1.55 + lean, HEIGHT + 80);
+  ctx.bezierCurveTo(startX + width * 0.4, 420, startX + width * 1.9, 150, startX + width * 0.55, -80);
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.fill();
+
+  ctx.globalAlpha = alpha * 0.58;
+  ctx.beginPath();
+  ctx.moveTo(startX + width * 0.92, -60);
+  ctx.bezierCurveTo(startX + width * 1.8, 150, startX + width * 0.28, 430, startX + width * 1.28 + lean, HEIGHT + 60);
+  ctx.lineWidth = Math.max(18, width * 0.18);
+  ctx.strokeStyle = shadow;
+  ctx.stroke();
   ctx.restore();
 }
 
@@ -105,6 +149,18 @@ function drawLogoCircle(
     ctx.lineWidth = 8;
     ctx.strokeStyle = "rgba(10,10,14,.22)";
     ctx.stroke();
+  } else {
+    ctx.beginPath();
+    ctx.arc(cx, cy, size / 2 + 4, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(0,0,0,.18)";
+    ctx.shadowColor = "rgba(0,0,0,.5)";
+    ctx.shadowBlur = 16;
+    ctx.shadowOffsetX = 3;
+    ctx.shadowOffsetY = 8;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
   }
   ctx.beginPath();
   ctx.arc(cx, cy, size / 2, 0, Math.PI * 2);
@@ -127,30 +183,61 @@ function drawThemePanel(ctx: CanvasRenderingContext2D, theme: TeamTheme) {
 
   const gradient = ctx.createLinearGradient(0, 0, splitTop, HEIGHT);
   if (theme === "men") {
-    gradient.addColorStop(0, "#09003f");
-    gradient.addColorStop(0.44, "#1b1179");
-    gradient.addColorStop(1, "#070028");
+    gradient.addColorStop(0, "#100058");
+    gradient.addColorStop(0.32, "#17106d");
+    gradient.addColorStop(0.64, "#0b074a");
+    gradient.addColorStop(1, "#050022");
   } else {
-    gradient.addColorStop(0, "#7f073e");
-    gradient.addColorStop(0.48, "#d20d66");
-    gradient.addColorStop(1, "#590625");
+    gradient.addColorStop(0, "#9c064c");
+    gradient.addColorStop(0.38, "#d9156d");
+    gradient.addColorStop(0.7, "#8b073e");
+    gradient.addColorStop(1, "#3f061f");
   }
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, splitTop, HEIGHT);
 
-  ctx.globalAlpha = theme === "men" ? 0.23 : 0.26;
-  for (let i = -260; i < 900; i += 140) {
+  const shine = ctx.createRadialGradient(245, 210, 20, 290, 260, 620);
+  shine.addColorStop(0, theme === "men" ? "rgba(116, 88, 255, .38)" : "rgba(255, 118, 180, .34)");
+  shine.addColorStop(0.48, theme === "men" ? "rgba(46, 31, 155, .16)" : "rgba(208, 30, 110, .18)");
+  shine.addColorStop(1, "rgba(0, 0, 0, 0)");
+  ctx.fillStyle = shine;
+  ctx.fillRect(0, 0, splitTop, HEIGHT);
+
+  const ribbonColor = theme === "men" ? "rgba(89, 68, 223, .26)" : "rgba(255, 82, 165, .22)";
+  const ribbonShadow = theme === "men" ? "rgba(0, 0, 42, .34)" : "rgba(76, 0, 34, .32)";
+  drawSilkRibbon(ctx, ribbonColor, ribbonShadow, -120, 120, 0.65, 80);
+  drawSilkRibbon(ctx, ribbonColor, ribbonShadow, 110, 135, 0.52, 95);
+  drawSilkRibbon(ctx, ribbonColor, ribbonShadow, 360, 155, 0.42, 105);
+  drawSilkRibbon(ctx, theme === "men" ? "rgba(126, 97, 255, .18)" : "rgba(255, 126, 190, .18)", ribbonShadow, 620, 150, 0.36, 90);
+
+  ctx.globalAlpha = 0.32;
+  ctx.globalCompositeOperation = "screen";
+  for (let i = -80; i < 880; i += 165) {
+    const fold = ctx.createLinearGradient(i, 0, i + 130, HEIGHT);
+    fold.addColorStop(0, "rgba(255,255,255,0)");
+    fold.addColorStop(0.48, theme === "men" ? "rgba(105,87,255,.2)" : "rgba(255,104,177,.2)");
+    fold.addColorStop(1, "rgba(255,255,255,0)");
     ctx.beginPath();
-    ctx.moveTo(i, 0);
-    ctx.bezierCurveTo(i + 220, 180, i - 80, 420, i + 260, HEIGHT);
-    ctx.lineWidth = 38;
-    ctx.strokeStyle = theme === "men" ? "#6950ff" : "#ff6ab3";
+    ctx.moveTo(i, -40);
+    ctx.bezierCurveTo(i + 115, 210, i + 20, 460, i + 180, HEIGHT + 40);
+    ctx.lineWidth = 32;
+    ctx.strokeStyle = fold;
     ctx.stroke();
   }
-  ctx.globalAlpha = 0.12;
-  ctx.fillStyle = "#000000";
-  for (let y = 0; y < HEIGHT; y += 8) {
-    ctx.fillRect(0, y, splitTop, 2);
+  ctx.globalCompositeOperation = "source-over";
+
+  const vignette = ctx.createLinearGradient(0, 0, splitTop, 0);
+  vignette.addColorStop(0, "rgba(0,0,0,.22)");
+  vignette.addColorStop(0.48, "rgba(0,0,0,0)");
+  vignette.addColorStop(1, "rgba(0,0,0,.28)");
+  ctx.fillStyle = vignette;
+  ctx.globalAlpha = 1;
+  ctx.fillRect(0, 0, splitTop, HEIGHT);
+
+  ctx.globalAlpha = 0.08;
+  ctx.fillStyle = "#ffffff";
+  for (let y = 0; y < HEIGHT; y += 5) {
+    ctx.fillRect(0, y, splitTop, 1);
   }
   ctx.restore();
 
@@ -234,14 +321,14 @@ function renderThumbnail({
   const vikingsLogo = logoImages["/assets/vikings-logo.png"];
   const opponentLogo = logoImages[opponent.logoUrl];
 
-  if (projectLogo) drawLogoCircle(ctx, projectLogo, 470, 88, 165, false);
-  drawText(ctx, project.tournamentLine1, 50, 345, 78);
-  drawText(ctx, project.tournamentLine2, 165, 435, 78);
-  drawText(ctx, stageText || "[예선 4경기]", 105, 640, 88);
+  if (projectLogo) drawLogoCircle(ctx, projectLogo, 445, 145, 148, false);
+  drawSportText(ctx, project.tournamentLine1, 420, 350, 76);
+  drawSportText(ctx, project.tournamentLine2, 420, 438, 76);
+  drawSportText(ctx, stageText || "[예선 4경기]", 425, 640, 88);
 
   if (vikingsLogo) drawLogoCircle(ctx, vikingsLogo, 190, 865, 250, false);
   ctx.save();
-  ctx.font = 'italic 900 84px Arial, "Apple SD Gothic Neo", sans-serif';
+  ctx.font = 'italic 900 84px "Apple SD Gothic Neo", "Noto Sans KR", "Arial Black", sans-serif';
   ctx.fillStyle = "#ffffff";
   ctx.shadowColor = "rgba(0,0,0,.65)";
   ctx.shadowBlur = 3;

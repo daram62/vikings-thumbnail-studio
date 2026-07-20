@@ -35,8 +35,14 @@ const DEFAULT_PROJECT: Project = {
   tournamentLine2: "챌린지컵 대회",
 };
 const DEFAULT_OPPONENTS: Opponent[] = [
-  { id: "haechis", name: "해치스 서울", logoUrl: "/assets/haechis-logo.png", circularFrame: true },
-  { id: "sniper", name: "스나이퍼", logoUrl: "/assets/sniper-logo.png", circularFrame: true },
+  { id: "incheon-sniper", name: "인천 스나이퍼", logoUrl: "/assets/sniper-logo.png", circularFrame: true },
+  { id: "seoul-haechis", name: "서울 해치스", logoUrl: "/assets/haechis-logo.png", circularFrame: true },
+  { id: "seoul-ares", name: "서울 아레스", logoUrl: "/assets/opponent-placeholder.png", circularFrame: true },
+  { id: "gyeryong-onekill-dragons", name: "계룡 원킬 드래곤즈", logoUrl: "/assets/opponent-placeholder.png", circularFrame: true },
+  { id: "gwangju-team-leopard", name: "광주 Team-Leopard", logoUrl: "/assets/opponent-placeholder.png", circularFrame: true },
+  { id: "jeju-blue-dolphins", name: "제주 블루돌핀스", logoUrl: "/assets/opponent-placeholder.png", circularFrame: true },
+  { id: "gangwon-blue-knights", name: "강원 블루나이츠", logoUrl: "/assets/opponent-placeholder.png", circularFrame: true },
+  { id: "jeonbuk-overflow", name: "전북 오버플로", logoUrl: "/assets/opponent-placeholder.png", circularFrame: true },
 ];
 
 const readImageFromFile = (file: File): Promise<LoadedImage> =>
@@ -109,12 +115,12 @@ function drawSportText(
   ctx.textBaseline = "alphabetic";
   ctx.lineJoin = "round";
   ctx.miterLimit = 2;
-  ctx.strokeStyle = "rgba(5, 5, 18, .5)";
-  ctx.lineWidth = Math.max(5, size * 0.06);
-  ctx.shadowColor = "rgba(0,0,0,.62)";
-  ctx.shadowBlur = 2;
-  ctx.shadowOffsetX = 7;
-  ctx.shadowOffsetY = 8;
+  ctx.strokeStyle = "rgba(5, 5, 18, .3)";
+  ctx.lineWidth = Math.max(3, size * 0.035);
+  ctx.shadowColor = "rgba(0,0,0,.32)";
+  ctx.shadowBlur = 4;
+  ctx.shadowOffsetX = 3;
+  ctx.shadowOffsetY = 4;
   ctx.strokeText(text, x, y);
   ctx.fillStyle = "#ffffff";
   ctx.fillText(text, x, y);
@@ -323,12 +329,9 @@ function renderThumbnail({
   if (gamePhoto) {
     drawCoverImage(ctx, gamePhoto, { x: splitBottom, y: 0, w: WIDTH - splitBottom, h: HEIGHT }, zoom, offsetX, offsetY);
   } else {
-    const bg = ctx.createLinearGradient(splitBottom, 0, WIDTH, HEIGHT);
-    bg.addColorStop(0, "#d9d2c2");
-    bg.addColorStop(1, "#918a7d");
-    ctx.fillStyle = bg;
+    ctx.fillStyle = "#ffffff";
     ctx.fillRect(splitBottom, 0, WIDTH - splitBottom, HEIGHT);
-    ctx.fillStyle = "rgba(255,255,255,.55)";
+    ctx.fillStyle = "rgba(17,17,24,.42)";
     ctx.font = '700 46px Arial, "Apple SD Gothic Neo", sans-serif';
     ctx.fillText("경기 사진 업로드", 1120, 540);
   }
@@ -349,10 +352,10 @@ function renderThumbnail({
   ctx.save();
   ctx.font = 'italic 900 84px "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", "Arial Black", sans-serif';
   ctx.fillStyle = "#ffffff";
-  ctx.shadowColor = "rgba(0,0,0,.65)";
+  ctx.shadowColor = "rgba(0,0,0,.34)";
   ctx.shadowBlur = 3;
-  ctx.shadowOffsetX = 6;
-  ctx.shadowOffsetY = 7;
+  ctx.shadowOffsetX = 3;
+  ctx.shadowOffsetY = 4;
   ctx.fillText("vs", 365, 895);
   ctx.restore();
   if (opponentLogo) drawLogoCircle(ctx, opponentLogo, 600, 865, 250, true);
@@ -362,6 +365,8 @@ export default function ThumbnailStudio() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [view, setView] = useState<"home" | "editor">("home");
   const [showProjectForm, setShowProjectForm] = useState(false);
+  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
+  const [openProjectMenuId, setOpenProjectMenuId] = useState<string | null>(null);
   const [showOpponentManager, setShowOpponentManager] = useState(false);
   const [projects, setProjects] = useState<Project[]>([DEFAULT_PROJECT]);
   const [opponents, setOpponents] = useState<Opponent[]>(DEFAULT_OPPONENTS);
@@ -474,36 +479,100 @@ export default function ThumbnailStudio() {
     return data.url;
   };
 
-  const createProject = async (event: FormEvent) => {
+  const resetProjectForm = () => {
+    setProjectName("");
+    setProjectLine1("대전광역시 플로어볼");
+    setProjectLine2("챌린지컵 대회");
+    setProjectLogoFile(null);
+    setEditingProjectId(null);
+  };
+
+  const openNewProjectForm = () => {
+    if (showProjectForm && !editingProjectId) {
+      setShowProjectForm(false);
+      return;
+    }
+    resetProjectForm();
+    setShowProjectForm(true);
+    setOpenProjectMenuId(null);
+  };
+
+  const editProject = (project: Project) => {
+    setEditingProjectId(project.id);
+    setProjectName(project.name);
+    setProjectLine1(project.tournamentLine1);
+    setProjectLine2(project.tournamentLine2);
+    setProjectLogoFile(null);
+    setShowProjectForm(true);
+    setOpenProjectMenuId(null);
+    setStatus(`${project.name} 프로젝트를 수정 중입니다.`);
+  };
+
+  const saveProject = async (event: FormEvent) => {
     event.preventDefault();
-    if (!projectName.trim() || !projectLogoFile) {
+    const editingProject = editingProjectId
+      ? projects.find((project) => project.id === editingProjectId)
+      : null;
+    if (!projectName.trim() || (!projectLogoFile && !editingProject)) {
       setStatus("프로젝트명과 대회 로고를 입력하세요.");
       return;
     }
     try {
       setStatus("프로젝트 저장 중");
-      const logoUrl = await uploadStoredImage(projectLogoFile, "project-logos");
-      const response = await fetch("/api/projects", {
-        method: "POST",
+      const logoUrl = projectLogoFile
+        ? await uploadStoredImage(projectLogoFile, "project-logos")
+        : editingProject!.logoUrl;
+      const projectPayload = {
+        name: projectName.trim(),
+        logoUrl,
+        tournamentLine1: projectLine1,
+        tournamentLine2: projectLine2,
+      };
+      const response = await fetch(editingProject ? `/api/projects/${editingProject.id}` : "/api/projects", {
+        method: editingProject ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: projectName,
-          logoUrl,
-          tournamentLine1: projectLine1,
-          tournamentLine2: projectLine2,
-        }),
+        body: JSON.stringify(projectPayload),
       });
       if (!response.ok) throw new Error("프로젝트 저장 실패");
+      if (editingProject) {
+        const updatedProject = { ...editingProject, ...projectPayload };
+        setProjects((items) => items.map((project) => project.id === editingProject.id ? updatedProject : project));
+        resetProjectForm();
+        setShowProjectForm(false);
+        setStatus("프로젝트 수정 완료");
+        return;
+      }
       const data = (await response.json()) as { project: Project };
       setProjects((items) => [data.project, ...items.filter((item) => item.id !== data.project.id)]);
       setSelectedProjectId(data.project.id);
-      setProjectName("");
-      setProjectLogoFile(null);
+      resetProjectForm();
       setShowProjectForm(false);
       setView("editor");
       setStatus("프로젝트 저장 완료");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "프로젝트 저장 실패");
+    }
+  };
+
+  const deleteProject = async (project: Project) => {
+    setOpenProjectMenuId(null);
+    if (!window.confirm(`“${project.name}” 프로젝트를 삭제할까요?`)) return;
+    try {
+      setStatus("프로젝트 삭제 중");
+      const response = await fetch(`/api/projects/${project.id}`, { method: "DELETE" });
+      if (!response.ok) throw new Error("프로젝트 삭제 실패");
+      const remainingProjects = projects.filter((item) => item.id !== project.id);
+      setProjects(remainingProjects);
+      if (selectedProjectId === project.id) {
+        setSelectedProjectId(remainingProjects[0]?.id ?? DEFAULT_PROJECT.id);
+      }
+      if (editingProjectId === project.id) {
+        resetProjectForm();
+        setShowProjectForm(false);
+      }
+      setStatus("프로젝트 삭제 완료");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "프로젝트 삭제 실패");
     }
   };
 
@@ -672,8 +741,9 @@ export default function ThumbnailStudio() {
       <main className="home-shell">
         <header className="home-header">
           <div>
-            <p className="eyebrow">Seoul Vikings</p>
-            <h1>대회 프로젝트</h1>
+            <p className="eyebrow">SEOUL VIKINGS</p>
+            <h1>경기 썸네일 스튜디오</h1>
+            <p className="home-subtitle">대회를 선택하고 경기 썸네일을 만들어보세요.</p>
           </div>
           <div className="home-actions">
             <button type="button" onClick={() => setShowOpponentManager((value) => !value)}>상대팀 관리</button>
@@ -684,30 +754,50 @@ export default function ThumbnailStudio() {
 
         <section className="project-gallery" aria-label="대회 프로젝트 목록">
           {projects.map((project) => (
-            <button key={project.id} className="project-card" type="button" onClick={() => openProject(project)}>
-              <img src={project.logoUrl} alt="" />
-              <strong>{project.name}</strong>
-              <span>{project.tournamentLine1}</span>
-              <span>{project.tournamentLine2}</span>
-            </button>
+            <article key={project.id} className="project-card-shell">
+              <button className="project-card project-card-open" type="button" onClick={() => openProject(project)}>
+                <img src={project.logoUrl} alt="" />
+                <strong>{project.name}</strong>
+                <span>{project.tournamentLine1}</span>
+                <span>{project.tournamentLine2}</span>
+              </button>
+              <button
+                className="project-menu-trigger"
+                type="button"
+                aria-label={`${project.name} 메뉴`}
+                aria-expanded={openProjectMenuId === project.id}
+                onClick={() => setOpenProjectMenuId((current) => current === project.id ? null : project.id)}
+              >
+                <span aria-hidden="true">•••</span>
+              </button>
+              {openProjectMenuId === project.id ? (
+                <div className="project-menu" role="menu" aria-label={`${project.name} 관리`}>
+                  <button type="button" role="menuitem" onClick={() => editProject(project)}>수정</button>
+                  <button className="danger-action" type="button" role="menuitem" onClick={() => deleteProject(project)}>삭제</button>
+                </div>
+              ) : null}
+            </article>
           ))}
 
-          <button className="project-card create-card" type="button" onClick={() => setShowProjectForm((value) => !value)}>
+          <button className="project-card create-card" type="button" onClick={openNewProjectForm}>
             <strong>+ 새 대회 프로젝트</strong>
             <span>대회 로고와 기본 문구를 저장</span>
           </button>
         </section>
 
         {showProjectForm ? (
-          <form className="create-project-panel" onSubmit={createProject}>
+          <form className="create-project-panel" onSubmit={saveProject}>
             <input value={projectName} onChange={(event) => setProjectName(event.target.value)} placeholder="프로젝트명" />
             <input value={projectLine1} onChange={(event) => setProjectLine1(event.target.value)} placeholder="대회명 1줄" />
             <input value={projectLine2} onChange={(event) => setProjectLine2(event.target.value)} placeholder="대회명 2줄" />
             <label className="file-button">
-              <span>{projectLogoFile ? projectLogoFile.name : "대회 로고 업로드"}</span>
+              <span>{projectLogoFile ? projectLogoFile.name : editingProjectId ? "새 로고 선택 (선택)" : "대회 로고 업로드"}</span>
               <input type="file" accept="image/*" onChange={(event) => setProjectLogoFile(event.target.files?.[0] ?? null)} />
             </label>
-            <button type="submit">프로젝트 만들기</button>
+            <button type="submit">{editingProjectId ? "수정 저장" : "프로젝트 만들기"}</button>
+            {editingProjectId ? (
+              <button className="secondary-action" type="button" onClick={() => { resetProjectForm(); setShowProjectForm(false); }}>취소</button>
+            ) : null}
           </form>
         ) : null}
 
@@ -717,7 +807,7 @@ export default function ThumbnailStudio() {
   }
 
   return (
-    <main className="studio-shell">
+    <main className={`studio-shell theme-${theme}`}>
       <section className="controls" aria-label="썸네일 설정">
         <div className="panel-head">
           <div>

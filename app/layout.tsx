@@ -2,8 +2,32 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Vikings Thumbnail Studio",
-  description: "Seoul Vikings floorball match thumbnail generator.",
+  metadataBase: new URL("https://vikings.ludia0602.workers.dev"),
+  title: "Seoul Vikings Thumbnail Studio",
+  description: "서울 바이킹스 경기 썸네일을 빠르게 만들어보세요.",
+  applicationName: "Vikings Thumbnail Studio",
+  openGraph: {
+    type: "website",
+    locale: "ko_KR",
+    url: "/",
+    siteName: "Vikings Thumbnail Studio",
+    title: "Seoul Vikings Thumbnail Studio",
+    description: "서울 바이킹스 경기 썸네일을 빠르게 만들어보세요.",
+    images: [
+      {
+        url: "/og.png",
+        width: 1200,
+        height: 630,
+        alt: "Seoul Vikings Thumbnail Studio",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Seoul Vikings Thumbnail Studio",
+    description: "서울 바이킹스 경기 썸네일을 빠르게 만들어보세요.",
+    images: ["/og.png"],
+  },
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",

@@ -8,10 +8,27 @@ const SITE_CREATOR_PLACEHOLDER_DATABASE_ID =
   "00000000-0000-4000-8000-000000000000";
 
 const { d1, r2 } = hostingConfig;
+const externalDeploy = process.env.CLOUDFLARE_EXTERNAL_DEPLOY === "1";
+const externalDatabaseId = process.env.CLOUDFLARE_DATABASE_ID;
 
-const localBindingConfig = {
+const localBindingConfig = externalDeploy
+  ? {
+      name: "vikings-thumbnail-studio",
+      main: "./worker/index.ts",
+      compatibility_date: "2026-07-20",
+      d1_databases: d1
+        ? [
+            {
+              binding: d1,
+              database_name: "vikings-thumbnail-studio-db",
+              database_id: externalDatabaseId || SITE_CREATOR_PLACEHOLDER_DATABASE_ID,
+            },
+          ]
+        : [],
+      r2_buckets: [],
+    }
+  : {
   main: "./worker/index.ts",
-  compatibility_flags: ["nodejs_compat"],
   d1_databases: d1
     ? [
         {
@@ -29,7 +46,7 @@ const localBindingConfig = {
         },
       ]
     : [],
-};
+  };
 
 export default defineConfig({
   plugins: [

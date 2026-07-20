@@ -1,18 +1,31 @@
-import { getBindings, jsonError } from "../../storage";
+import { ensureSchema, getBindings, jsonError } from "../../storage";
 
 export const runtime = "edge";
 
 export async function GET(_request: Request, context: { params: Promise<{ key: string[] }> }) {
-  const { BUCKET } = getBindings();
-  if (!BUCKET) return jsonError("R2 binding BUCKET is unavailable.", 503);
+  const { DB, BUCKET } = getBindings();
   const { key } = await context.params;
   const objectKey = key.join("/");
-  const object = await BUCKET.get(objectKey);
-  if (!object) return jsonError("Asset not found.", 404);
+  const object = BUCKET ? await BUCKET.get(objectKey) : null;
+  if (object) {
+    const headers = new Headers();
+    object.writeHttpMetadata(headers);
+    headers.set("etag", object.httpEtag);
+    headers.set("cache-control", "public, max-age=31536000, immutable");
+    return new Response(object.body, { headers });
+  }
 
-  const headers = new Headers();
-  object.writeHttpMetadata(headers);
-  headers.set("etag", object.httpEtag);
-  headers.set("cache-control", "public, max-age=31536000, immutable");
-  return new Response(object.body, { headers });
+  if (!DB) return jsonError("Asset not found.", 404);
+  await ensureSchema(DB);
+  const asset = await DB.prepare("SELECT content_type, body FROM assets WHERE key = ?")
+    .bind(objectKey)
+    .first<{ content_type: string; body: ArrayBuffer }>();
+  if (!asset) return jsonError("Asset not found.", 404);
+
+  return new Response(asset.body, {
+    headers: {
+      "content-type": asset.content_type,
+      "cache-control": "public, max-age=31536000, immutable",
+    },
+  });
 }

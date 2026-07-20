@@ -58,6 +58,13 @@ export async function ensureSchema(db: D1Database) {
       photo_name TEXT,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     )`),
+    db.prepare(`CREATE TABLE IF NOT EXISTS assets (
+      key TEXT PRIMARY KEY,
+      content_type TEXT NOT NULL,
+      body BLOB NOT NULL,
+      original_name TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`),
     db.prepare("CREATE INDEX IF NOT EXISTS thumbnails_created_at_idx ON thumbnails (created_at)"),
   ]);
 

@@ -16,7 +16,22 @@ npm run dev
 npm run build
 ```
 
-This starter does not use `wrangler.jsonc`.
+## Public deployment
+
+The public production site runs on Cloudflare Workers with D1-backed storage:
+
+<https://vikings-thumbnail-studio.ludia0602.workers.dev>
+
+Deploy with the account's D1 database binding:
+
+```bash
+CLOUDFLARE_EXTERNAL_DEPLOY=1 \
+CLOUDFLARE_DATABASE_ID=e0e1a2d0-9b02-4018-adc0-f9a6934c696a \
+npx vinext deploy
+```
+
+Uploaded images are stored in D1 when an R2 bucket is not configured, so the
+public deployment works without enabling R2 billing.
 
 ## Included Shape
 

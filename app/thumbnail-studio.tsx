@@ -362,7 +362,7 @@ function renderThumbnail({
   ctx.shadowOffsetY = 4;
   ctx.fillText("vs", 365, 895);
   ctx.restore();
-  if (opponentLogo) drawLogoCircle(ctx, opponentLogo, 600, 865, 250, true);
+  if (opponentLogo) drawLogoCircle(ctx, opponentLogo, 640, 865, 250, true);
 }
 
 export default function ThumbnailStudio() {

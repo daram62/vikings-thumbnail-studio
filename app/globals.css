@@ -528,7 +528,7 @@ select {
 
 .opponent-row {
   display: grid;
-  grid-template-columns: 44px 1fr auto auto;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
   min-height: 62px;
@@ -547,12 +547,18 @@ select {
 }
 
 .opponent-row span {
+  min-width: 0;
   overflow: hidden;
   color: var(--ink);
   font-size: 15px;
   font-weight: 650;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.opponent-actions {
+  display: flex;
+  gap: 8px;
 }
 
 .opponent-row button {
@@ -714,11 +720,46 @@ canvas {
     padding: 22px 16px;
   }
 
-  .opponent-row {
-    grid-template-columns: 40px 1fr;
+  .manager-panel {
+    width: 100%;
+    min-width: 0;
+    gap: 16px;
+    border-radius: 18px;
+    padding: 18px;
   }
 
-  .opponent-row button {
-    grid-column: auto;
+  .manager-panel .section-title {
+    align-items: center;
+    flex-direction: row;
+  }
+
+  .manager-panel .section-title h2 {
+    min-width: 0;
+    font-size: 25px;
+  }
+
+  .manager-panel .file-button,
+  .manager-panel .file-button span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .opponent-row {
+    grid-template-columns: 40px minmax(0, 1fr);
+    align-items: center;
+    padding: 10px;
+  }
+
+  .opponent-actions {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    width: 100%;
+  }
+
+  .opponent-actions button {
+    width: 100%;
   }
 }

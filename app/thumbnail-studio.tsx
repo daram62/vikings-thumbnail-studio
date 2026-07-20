@@ -732,8 +732,10 @@ export default function ThumbnailStudio() {
           <div key={opponent.id} className="opponent-row">
             <img src={opponent.logoUrl} alt="" />
             <span>{opponent.name}</span>
-            <button type="button" onClick={() => loadOpponentForEdit(opponent)}>편집</button>
-            <button type="button" onClick={() => deleteOpponent(opponent.id)}>삭제</button>
+            <div className="opponent-actions">
+              <button type="button" onClick={() => loadOpponentForEdit(opponent)}>편집</button>
+              <button type="button" onClick={() => deleteOpponent(opponent.id)}>삭제</button>
+            </div>
           </div>
         ))}
       </div>

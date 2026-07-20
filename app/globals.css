@@ -522,6 +522,7 @@ select {
 }
 
 .opponent-list {
+  grid-auto-rows: max-content;
   max-height: 260px;
   overflow: auto;
 }
@@ -748,7 +749,9 @@ canvas {
 
   .opponent-row {
     grid-template-columns: 40px minmax(0, 1fr);
+    grid-template-rows: auto auto;
     align-items: center;
+    min-height: 0;
     padding: 10px;
   }
 

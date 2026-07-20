@@ -13,7 +13,7 @@ const externalDatabaseId = process.env.CLOUDFLARE_DATABASE_ID;
 
 const localBindingConfig = externalDeploy
   ? {
-      name: "vikings-thumbnail-studio",
+      name: "vikings",
       main: "./worker/index.ts",
       compatibility_date: "2026-07-20",
       d1_databases: d1

@@ -20,7 +20,7 @@ npm run build
 
 The public production site runs on Cloudflare Workers with D1-backed storage:
 
-<https://vikings-thumbnail-studio.ludia0602.workers.dev>
+<https://vikings.ludia0602.workers.dev>
 
 Deploy with the account's D1 database binding:
 

@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "vikings-thumbnail-studio",
+  "name": "vikings",
   "compatibility_date": "2026-07-20",
   "compatibility_flags": [
     "nodejs_compat"

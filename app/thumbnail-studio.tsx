@@ -329,9 +329,13 @@ function renderThumbnail({
   if (gamePhoto) {
     drawCoverImage(ctx, gamePhoto, { x: splitBottom, y: 0, w: WIDTH - splitBottom, h: HEIGHT }, zoom, offsetX, offsetY);
   } else {
-    ctx.fillStyle = "#ffffff";
+    const emptyPhotoGradient = ctx.createLinearGradient(splitBottom, 0, WIDTH, HEIGHT);
+    emptyPhotoGradient.addColorStop(0, "#272331");
+    emptyPhotoGradient.addColorStop(0.55, "#1b1922");
+    emptyPhotoGradient.addColorStop(1, "#111017");
+    ctx.fillStyle = emptyPhotoGradient;
     ctx.fillRect(splitBottom, 0, WIDTH - splitBottom, HEIGHT);
-    ctx.fillStyle = "rgba(17,17,24,.42)";
+    ctx.fillStyle = "rgba(255,255,255,.34)";
     ctx.font = '700 46px Arial, "Apple SD Gothic Neo", sans-serif';
     ctx.fillText("경기 사진 업로드", 1120, 540);
   }

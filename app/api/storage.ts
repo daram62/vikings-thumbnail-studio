@@ -73,17 +73,17 @@ export async function ensureSchema(db: D1Database) {
         "챌린지컵 대회",
       ),
       db.prepare(`INSERT OR IGNORE INTO opponents (id, name, logo_url, circular_frame)
-        VALUES (?, ?, ?, ?)`).bind("incheon-sniper", "인천 스나이퍼", "/assets/sniper-logo.png", 1),
+        VALUES (?, ?, ?, ?)`).bind("incheon-sniper", "인천 스나이퍼", "/assets/incheon-sniper-logo.png", 1),
       db.prepare(`INSERT OR IGNORE INTO opponents (id, name, logo_url, circular_frame)
-        VALUES (?, ?, ?, ?)`).bind("seoul-haechis", "서울 해치스", "/assets/haechis-logo.png", 1),
+        VALUES (?, ?, ?, ?)`).bind("seoul-haechis", "서울 해치스", "/assets/seoul-haechis-logo.png", 1),
       db.prepare(`INSERT OR IGNORE INTO opponents (id, name, logo_url, circular_frame)
         VALUES (?, ?, ?, ?)`).bind("seoul-ares", "서울 아레스", "/assets/opponent-placeholder.png", 1),
       db.prepare(`INSERT OR IGNORE INTO opponents (id, name, logo_url, circular_frame)
-        VALUES (?, ?, ?, ?)`).bind("gyeryong-onekill-dragons", "계룡 원킬 드래곤즈", "/assets/opponent-placeholder.png", 1),
+        VALUES (?, ?, ?, ?)`).bind("gyeryong-onekill-dragons", "계룡 원킬 드래곤즈", "/assets/gyeryong-onekill-dragons-logo.png", 1),
       db.prepare(`INSERT OR IGNORE INTO opponents (id, name, logo_url, circular_frame)
-        VALUES (?, ?, ?, ?)`).bind("gwangju-team-leopard", "광주 Team-Leopard", "/assets/opponent-placeholder.png", 1),
+        VALUES (?, ?, ?, ?)`).bind("gwangju-team-leopard", "광주 Team-Leopard", "/assets/gwangju-team-leopard-logo.png", 1),
       db.prepare(`INSERT OR IGNORE INTO opponents (id, name, logo_url, circular_frame)
-        VALUES (?, ?, ?, ?)`).bind("jeju-blue-dolphins", "제주 블루돌핀스", "/assets/opponent-placeholder.png", 1),
+        VALUES (?, ?, ?, ?)`).bind("jeju-blue-dolphins", "제주 블루돌핀스", "/assets/jeju-blue-dolphins-logo.png", 1),
       db.prepare(`INSERT OR IGNORE INTO opponents (id, name, logo_url, circular_frame)
         VALUES (?, ?, ?, ?)`).bind("gangwon-blue-knights", "강원 블루나이츠", "/assets/opponent-placeholder.png", 1),
       db.prepare(`INSERT OR IGNORE INTO opponents (id, name, logo_url, circular_frame)

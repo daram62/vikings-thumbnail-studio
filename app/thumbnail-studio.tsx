@@ -37,12 +37,12 @@ const DEFAULT_PROJECT: Project = {
 const DEFAULT_OPPONENTS: Opponent[] = [
   { id: "incheon-sniper", name: "인천 스나이퍼", logoUrl: "/assets/incheon-sniper-logo.png", circularFrame: true },
   { id: "seoul-haechis", name: "서울 해치스", logoUrl: "/assets/seoul-haechis-logo.png", circularFrame: true },
-  { id: "seoul-ares", name: "서울 아레스", logoUrl: "/assets/opponent-placeholder.png", circularFrame: true },
+  { id: "seoul-ares", name: "서울 아레스", logoUrl: "/assets/seoul-ares-logo.png", circularFrame: true },
   { id: "gyeryong-onekill-dragons", name: "계룡 원킬 드래곤즈", logoUrl: "/assets/gyeryong-onekill-dragons-logo.png", circularFrame: true },
   { id: "gwangju-team-leopard", name: "광주 Team-Leopard", logoUrl: "/assets/gwangju-team-leopard-logo.png", circularFrame: true },
   { id: "jeju-blue-dolphins", name: "제주 블루돌핀스", logoUrl: "/assets/jeju-blue-dolphins-logo.png", circularFrame: true },
-  { id: "gangwon-blue-knights", name: "강원 블루나이츠", logoUrl: "/assets/opponent-placeholder.png", circularFrame: true },
-  { id: "jeonbuk-overflow", name: "전북 오버플로", logoUrl: "/assets/opponent-placeholder.png", circularFrame: true },
+  { id: "gangwon-blue-knights", name: "강원 블루나이츠", logoUrl: "/assets/gangwon-blue-knights-logo.png", circularFrame: true },
+  { id: "jeonbuk-overflow", name: "전북 오버플로", logoUrl: "/assets/jeonbuk-overflow-logo.png", circularFrame: true },
 ];
 
 const readImageFromFile = (file: File): Promise<LoadedImage> =>
